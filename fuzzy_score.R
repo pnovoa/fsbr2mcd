@@ -3,13 +3,15 @@ library(tidyverse)
 library(patchwork)
 source("aw_methods.R")
 source("fuzzy_analysis.R")
+source("plots.R")
+library(patchwork)
 
 # Creating case study data
 
 set.seed(1321)
 
-nsol <- 897
-ncrit <- 4
+nsol <- 20
+ncrit <- 5
 max_eval <- 10.
 
 sol_names <- paste0("S", 1:nsol)
@@ -33,6 +35,8 @@ generate_polyhedron_vertices <- function(ncrit) {
   
   return(m)
 }
+
+
 
 vert_matrix <- generate_polyhedron_vertices(ncrit = ncrit)
 
@@ -108,7 +112,7 @@ df_label_rank_matrix <- as_tibble(rank_label_matrix) %>%
   mutate(across(everything(), ~ factor(.x, levels=sol_names))) %>%
   mutate(Rank = 1:nsol)
 
-topn <- 50
+topn <- 5
 
 match_matrix <- sapply(df_label_rank_matrix %>% select(-Rank), function(m1){
   sapply(df_label_rank_matrix %>% select(-Rank), function(m2){
@@ -128,3 +132,42 @@ p2 <- corrplot(match_matrix)
 print(p1)
 
 print(p2)
+
+f_names <- colnames(core_matrix)
+letter_vec <- letters[1:length(f_names)]
+letter_vec <- paste0(letter_vec, ") ", f_names)
+names(letter_vec) <- f_names
+
+fuzzy_plots <- lapply(f_names, function(core_name){
+  sort_sols <- df_label_rank_matrix[, paste0("F_", core_name)] %>% as_vector()
+  CORE <- core_matrix[,core_name]
+  m <- cbind(score_interval_matrix, CORE)
+  plot_fuzzy_scores(m, sort_sols, letter_vec[core_name])
+})
+
+
+p_all <- wrap_plots(fuzzy_plots, ncol = 3)
+ggsave(filename = "plot_fuzzy.pdf", plot = p_all, width = 7, height = 9)
+
+weights_labels <- apply(vert_matrix, MARGIN = 2, function(c) paste0("(", paste(round(c,2), collapse = ", "), ")", collapse = ""))
+colnames(vert_eval_matrix) <- paste0("VE", 1:ncrit)
+
+p_int <- plot_intervals(cbind(vert_eval_matrix, score_interval_matrix), weights_labels) + ggtitle("a) Distribution of extreme weights")
+
+print(p_int)
+
+
+weights_labels <- sapply(weights_settings_list, function(c) paste0("(", paste(round(c,2), collapse = ", "), ")", collapse = ""))
+weights_labels <- paste0(names(weights_settings_list), "=", weights_labels)
+
+approx_weights_matrix <- cbind(score_by_weights_setting_matrix, score_interval_matrix)
+
+colnames(approx_weights_matrix) <- c(paste0("VE", 1:length(weights_labels)) , "LB", "UB")
+
+p_aw <- plot_intervals(approx_weights_matrix, weights_labels) + ggtitle("b) Distribution of approximated weights")
+
+print(p_aw)
+
+p_int_all <- p_int / p_aw
+
+ggsave(filename = "plot_intervals.pdf", plot = p_int_all, width = 7, height = 9)

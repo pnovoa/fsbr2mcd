@@ -10,17 +10,28 @@ library(FuzzyNumbers)
   a_ <- TriangularFuzzyNumber(a[[1]][1], a[[1]][2], a[[1]][3])
   b_ <- TriangularFuzzyNumber(b[[1]][1], b[[1]][2], b[[1]][3])
   
-  a_ <- as.PiecewiseLinearFuzzyNumber(a_)
-  b_ <- as.PiecewiseLinearFuzzyNumber(b_)
-  
   return(
-    possibilityStrictExceedance_comparison(a_, b_)
+    yager2(a_) > yager2(b_)
   )
+  
+  # a_ <- as.PiecewiseLinearFuzzyNumber(a_)
+  # b_ <- as.PiecewiseLinearFuzzyNumber(b_)
+  # 
+  # return(
+  #   possibilityStrictExceedance_comparison(a_, b_)
+  # )
   
 }
 
 is.na.myfuzzn <- function(a) FALSE
 
+yager2 <- function(fn){
+  
+  return(
+    (fn["a1"] + 2*fn["a2"] + fn["a4"])/4.
+    )
+  
+}
 
 possibilityStrictExceedance_comparison <- function(fn_a, fn_b){
   poss_excee <- possibilityStrictExceedance(fn_a, fn_b)

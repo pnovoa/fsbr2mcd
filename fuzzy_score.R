@@ -5,6 +5,7 @@ source("aw_methods.R")
 source("fuzzy_analysis.R")
 source("plots.R")
 library(patchwork)
+library(GGally)
 
 # Creating case study data
 
@@ -84,7 +85,7 @@ fuzzy_ranked_solution_matrix <- apply(core_matrix, MARGIN = 2, function(CORE){
   fuzzy_solution_sort(fn_def_matrix)
 })
 
-colnames(fuzzy_ranked_solution_matrix) <- paste0("F_", colnames(core_matrix))
+colnames(fuzzy_ranked_solution_matrix) <- paste0("F", colnames(core_matrix))
 
 rank_label_matrix <- cbind(crisp_ranked_solution_matrix, fuzzy_ranked_solution_matrix)
 
@@ -101,11 +102,15 @@ rank_matrix <- apply(rank_label_matrix, MARGIN = 2, function(x){
 df_rank_matrix <- as_tibble(rank_matrix) %>%
   mutate(Solution = factor(sol_names, levels=sol_names))
 
-corr_matrix <- sapply(df_rank_matrix %>% select(-Solution), function(m1){
-  sapply(df_rank_matrix %>% select(-Solution), function(m2){
+corr_matrix <- sapply(df_rank_matrix %>% select(starts_with("F")), function(m1){
+  sapply(df_rank_matrix %>% select(starts_with("F")), function(m2){
     cor(m1, m2, method = "kendall")
   })
 })
+
+newnames <- str_replace(colnames(corr_matrix), "F", "")
+colnames(corr_matrix) <- newnames
+rownames(corr_matrix) <- newnames
 
 
 df_label_rank_matrix <- as_tibble(rank_label_matrix) %>%
@@ -125,7 +130,11 @@ match_matrix <- sapply(df_label_rank_matrix %>% select(-Rank), function(m1){
 
 library(corrplot)
 
-p1 <- corrplot(corr_matrix)
+p1 <- ggcorr(df_rank_matrix %>% select(starts_with("F")) %>% rename_with(~str_replace(.x, "F", ""), everything()) , method = c("pairwise", "kendall"), label = TRUE, label_round = 3)
+
+#p1 <- p1 + scale_fill_viridis_c(option = "C", )
+
+ggsave(filename = "corr_plot.pdf", p1, width = 5, height = 5)
 
 p2 <- corrplot(match_matrix)
 
@@ -139,7 +148,7 @@ letter_vec <- paste0(letter_vec, ") ", f_names)
 names(letter_vec) <- f_names
 
 fuzzy_plots <- lapply(f_names, function(core_name){
-  sort_sols <- df_label_rank_matrix[, paste0("F_", core_name)] %>% as_vector()
+  sort_sols <- df_label_rank_matrix[, paste0("F", core_name)] %>% as_vector()
   CORE <- core_matrix[,core_name]
   m <- cbind(score_interval_matrix, CORE)
   plot_fuzzy_scores(m, sort_sols, letter_vec[core_name])

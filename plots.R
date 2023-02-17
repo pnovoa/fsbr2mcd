@@ -11,11 +11,36 @@ plot_fuzzy_scores <- function(interval_matrix, sorted_sol, fn_name){
       MF = ifelse(Point == "CORE", 1, 0)
     ) %>% mutate(x = Score, y=as.numeric(Solution) + ifelse(Point == "CORE", 1, 0)) %>% 
     ggplot(aes(x = Score, y = Solution)) +
-    geom_polygon(aes(y=y, fill = Solution, group = Solution), color="black") + 
+    geom_polygon(aes(y=y, fill = Solution, group = Solution)) + 
     scale_y_continuous(breaks = seq(1,nsol), labels = rev(sorted_sol)) + 
     theme(legend.position = "none") +
-    ggtitle(fn_name) +
-    scale_fill_viridis_d(option = "C")
+    ggtitle(fn_name) #+
+    #scale_fill_viridis_d(option = "C")
+  
+  return(pfns)
+  
+}
+
+
+plot_fuzzy_scores_label <- function(interval_matrix, sorted_sol, fn_name){
+  
+  df_sol <- interval_matrix %>%
+    as_tibble(rownames="Solution") %>% 
+    select(Solution, LB, CORE, UB, Rank) %>%
+    mutate(Solution = factor(Solution, levels=rev(sorted_sol)))
+  
+  df_for_polygon <- df_sol %>%
+    pivot_longer(cols = -c(Solution,Rank), names_to = "Point", values_to = "Score") %>%
+    mutate(x = Score, y=as.numeric(Solution) + ifelse(Point == "CORE", 1, 0)) %>%
+    mutate(Rank = ifelse(Point == "CORE", Rank, NA))
+  
+  pfns <- df_for_polygon %>%
+    ggplot(aes(x = Score, y = Solution, fill=Solution)) +
+    geom_polygon(aes(y=y, group = Solution)) + 
+    geom_text(aes(x=Score, y=as.numeric(Solution), label=Rank), vjust=-1, size=3) +
+    scale_y_continuous(breaks = seq(1,nsol), labels = rev(sorted_sol)) + 
+    theme(legend.position = "none") +
+    ggtitle(fn_name)
   
   return(pfns)
   

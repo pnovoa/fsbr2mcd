@@ -124,28 +124,38 @@ df_label_rank_matrix <- as_tibble(rank_label_matrix) %>%
 
 topn <- 5
 
-match_matrix <- sapply(df_label_rank_matrix %>% select(-Rank), function(m1){
-  sapply(df_label_rank_matrix %>% select(-Rank), function(m2){
+match_matrix <- sapply(df_label_rank_matrix %>% select(-Rank) %>% select(starts_with("F")), function(m1){
+  sapply(df_label_rank_matrix %>% select(-Rank) %>% select(starts_with("F")), function(m2){
     length(intersect(m1[1:topn], m2[1:topn]))/topn
   })
 })
-
+colnames(match_matrix) <- newnames
+rownames(match_matrix) <- newnames
 
 # Plots
 
 library(corrplot)
 
-p1 <- ggcorr(df_rank_matrix %>% select(starts_with("F")) %>% rename_with(~str_replace(.x, "F", ""), everything()) , method = c("pairwise", "kendall"), label = TRUE, label_round = 3)
+p1 <- ggcorr(df_rank_matrix %>% 
+               select(starts_with("F")) %>% 
+               rename_with(~str_replace(.x, "F", ""), everything()), 
+             method = c("pairwise", "kendall"), 
+             label = TRUE, 
+             label_round = 3) + 
+  ggtitle("a) Correlation") + 
+  theme(title = element_text(face = "bold", size = 12))
 
 #p1 <- p1 + scale_fill_viridis_c(option = "C", )
 
-ggsave(filename = "corr_plot.pdf", p1, width = 5, height = 5)
+# ggsave(filename = "corr_plot.pdf", p1, width = 5, height = 5)
 
-p2 <- corrplot(match_matrix)
+p2 <- ggcorr(data = NULL, cor_matrix = match_matrix, limits = FALSE,
+             label = TRUE, 
+             label_round = 3) + 
+  ggtitle("b) Matching rate for the top 5 solutions") + 
+  theme(title = element_text(face = "bold", size = 12))
 
-print(p1)
-
-print(p2)
+ggsave(filename = "corr_match_plots.pdf", p1 + p2, width = 9, height = 4)
 
 f_names <- colnames(core_matrix)
 letter_vec <- letters[1:length(f_names)]
@@ -169,6 +179,20 @@ fuzzy_plots <- lapply(f_names, function(core_name){
 
 p_all <- wrap_plots(fuzzy_plots, ncol = 3)
 ggsave(filename = "plot_fuzzy.pdf", plot = p_all, width = 7, height = 9)
+
+fuzzy_plots <- lapply(f_names, function(core_name){
+  sort_sols <- sol_names #df_label_rank_matrix[, paste0("F", core_name)] %>% as_vector()
+  CORE <- core_matrix[,core_name]
+  Rank <- df_label_rank_matrix[, paste0("F", core_name)] %>% as_vector()
+  m <- cbind(score_interval_matrix, CORE, Rank)
+  plot_fuzzy_scores_label(m, sort_sols, letter_vec[core_name])
+})
+
+
+p_all <- wrap_plots(fuzzy_plots, ncol = 3)
+ggsave(filename = "plot_fuzzy_labels.pdf", plot = p_all, width = 7, height = 9)
+
+
 
 weights_labels <- apply(vert_matrix, MARGIN = 2, function(c) paste0("(", paste(round(c,2), collapse = ", "), ")", collapse = ""))
 colnames(vert_eval_matrix) <- paste0("VE", 1:ncrit)

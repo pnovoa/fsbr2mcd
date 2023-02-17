@@ -58,18 +58,23 @@ weights_settings_list <- list(
   "RS" = rs_weights(ncrit)
 )
 
+
+
 score_by_weights_setting_matrix <- sapply(weights_settings_list, function(w_setting) eval_matrix %*% w_setting)
 
+# Interval center score
+
+IC <- apply(score_interval_matrix, MARGIN=1, FUN=function(x) mean(x))
 
 # Mean weights score 
 
 comb_weight_score_matrix <- cbind(vert_eval_matrix[,-ncrit], score_by_weights_setting_matrix)
 
-MWS <- apply(comb_weight_score_matrix, MARGIN = 1, function(sol_w_s) mean(sol_w_s))
+#MWS <- apply(comb_weight_score_matrix, MARGIN = 1, function(sol_w_s) mean(sol_w_s))
 
-MWS2 <- apply(score_by_weights_setting_matrix, MARGIN = 1, function(sol_w_s) mean(sol_w_s))
+MWS <- apply(cbind(score_by_weights_setting_matrix, IC), MARGIN = 1, function(sol_w_s) mean(sol_w_s))
 
-core_matrix <- cbind(score_by_weights_setting_matrix, MWS, MWS2)
+core_matrix <- cbind(IC, score_by_weights_setting_matrix, MWS)
 
 
 crisp_ranked_solution_matrix <- apply(core_matrix, MARGIN = 2, function(CORE){
@@ -147,8 +152,15 @@ letter_vec <- letters[1:length(f_names)]
 letter_vec <- paste0(letter_vec, ") ", f_names)
 names(letter_vec) <- f_names
 
+# fuzzy_plots <- lapply(f_names, function(core_name){
+#   sort_sols <- df_label_rank_matrix[, paste0("F", core_name)] %>% as_vector()
+#   CORE <- core_matrix[,core_name]
+#   m <- cbind(score_interval_matrix, CORE)
+#   plot_fuzzy_scores(m, sort_sols, letter_vec[core_name])
+# })
+
 fuzzy_plots <- lapply(f_names, function(core_name){
-  sort_sols <- df_label_rank_matrix[, paste0("F", core_name)] %>% as_vector()
+  sort_sols <- sol_names #df_label_rank_matrix[, paste0("F", core_name)] %>% as_vector()
   CORE <- core_matrix[,core_name]
   m <- cbind(score_interval_matrix, CORE)
   plot_fuzzy_scores(m, sort_sols, letter_vec[core_name])

@@ -22,7 +22,7 @@ plot_fuzzy_scores <- function(interval_matrix, sorted_sol, fn_name){
 }
 
 
-plot_intervals <- function(assess_matrix, weights_labels){
+plot_intervals_and_weights <- function(assess_matrix, weights_labels){
   
   cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out=100))
   
@@ -43,3 +43,19 @@ plot_intervals <- function(assess_matrix, weights_labels){
   print(porig)
 }
 
+
+plot_intervals_only <- function(assess_matrix){
+  
+  cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out=100))
+  
+  porig <- assess_matrix %>%
+    as_tibble(rownames="Solution") %>%
+    mutate(Solution = factor(Solution, levels=rev(rownames(assess_matrix)))) %>%
+    select(Solution, LB, UB) %>%
+    ggplot(aes(x=LB, y=Solution)) +
+    geom_segment(aes(xend=UB, yend=Solution), linewidth=0.5, linetype="solid") +
+    xlab("Score")
+  #scale_fill_brewer(palette = "YlOrRd")
+  
+  print(porig)
+}

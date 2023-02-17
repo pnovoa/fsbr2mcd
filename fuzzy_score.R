@@ -11,7 +11,7 @@ library(GGally)
 
 set.seed(1321)
 
-nsol <- 20
+nsol <- 10
 ncrit <- 5
 max_eval <- 10.
 
@@ -161,9 +161,8 @@ ggsave(filename = "plot_fuzzy.pdf", plot = p_all, width = 7, height = 9)
 weights_labels <- apply(vert_matrix, MARGIN = 2, function(c) paste0("(", paste(round(c,2), collapse = ", "), ")", collapse = ""))
 colnames(vert_eval_matrix) <- paste0("VE", 1:ncrit)
 
-p_int <- plot_intervals(cbind(vert_eval_matrix, score_interval_matrix), weights_labels) + ggtitle("a) Distribution of extreme weights")
-
-print(p_int)
+p_int <- plot_intervals_and_weights(cbind(vert_eval_matrix, score_interval_matrix), weights_labels) + 
+  ggtitle("b) Distribution of extreme weights")
 
 
 weights_labels <- sapply(weights_settings_list, function(c) paste0("(", paste(round(c,2), collapse = ", "), ")", collapse = ""))
@@ -173,10 +172,12 @@ approx_weights_matrix <- cbind(score_by_weights_setting_matrix, score_interval_m
 
 colnames(approx_weights_matrix) <- c(paste0("VE", 1:length(weights_labels)) , "LB", "UB")
 
-p_aw <- plot_intervals(approx_weights_matrix, weights_labels) + ggtitle("b) Distribution of approximated weights")
+p_aw <- plot_intervals_and_weights(approx_weights_matrix, weights_labels) + ggtitle("c) Distribution of approximated weights")
 
-print(p_aw)
 
-p_int_all <- p_int / p_aw
+p_int_only <- plot_intervals_only(score_interval_matrix) + 
+  ggtitle("a) Score intervals")
 
-ggsave(filename = "plot_intervals.pdf", plot = p_int_all, width = 7, height = 9)
+p_int_all <- p_int_only / p_int / p_aw
+
+ggsave(filename = "plot_intervals_all.pdf", plot = p_int_all, width = 7, height = 10)

@@ -140,6 +140,7 @@ p1 <- ggcorr(df_rank_matrix %>%
                select(starts_with("F")) %>% 
                rename_with(~str_replace(.x, "F", ""), everything()), 
              method = c("pairwise", "kendall"), 
+             low = "#DBDBDB", mid = "#5C5E60", high = "#DBDBDB", 
              label = TRUE, 
              label_round = 3) + 
   ggtitle("a) Correlation") + 
@@ -151,6 +152,7 @@ p1 <- ggcorr(df_rank_matrix %>%
 
 p2 <- ggcorr(data = NULL, cor_matrix = match_matrix, limits = FALSE,
              label = TRUE, 
+             low = "#212016", mid = "#5C5E60", high = "#DBDBDB", 
              label_round = 3) + 
   ggtitle("b) Matching rate for the top 5 solutions") + 
   theme(title = element_text(face = "bold", size = 12))
@@ -198,7 +200,9 @@ weights_labels <- apply(vert_matrix, MARGIN = 2, function(c) paste0("(", paste(r
 colnames(vert_eval_matrix) <- paste0("VE", 1:ncrit)
 
 p_int <- plot_intervals_and_weights(cbind(vert_eval_matrix, score_interval_matrix), weights_labels) + 
-  ggtitle("b) Distribution of extreme weights")
+  ggtitle("b) Distribution of extreme weights") + 
+  theme(legend.position="bottom", legend.title = element_blank(), legend.text = element_text(size = 9))  + 
+  guides(fill=guide_legend(nrow=3, byrow=FALSE))
 
 
 weights_labels <- sapply(weights_settings_list, function(c) paste0("(", paste(round(c,2), collapse = ", "), ")", collapse = ""))
@@ -208,12 +212,18 @@ approx_weights_matrix <- cbind(score_by_weights_setting_matrix, score_interval_m
 
 colnames(approx_weights_matrix) <- c(paste0("VE", 1:length(weights_labels)) , "LB", "UB")
 
-p_aw <- plot_intervals_and_weights(approx_weights_matrix, weights_labels) + ggtitle("c) Distribution of approximated weights")
+p_aw <- plot_intervals_and_weights(approx_weights_matrix, weights_labels) + 
+  ggtitle("c) Distribution of approximated weights")  +
+  theme(legend.position="bottom", legend.title = element_blank(), legend.text = element_text(size = 9))  + 
+  guides(fill=guide_legend(nrow=4, byrow=FALSE))
+  
 
 
 p_int_only <- plot_intervals_only(score_interval_matrix) + 
   ggtitle("a) Score intervals")
 
-p_int_all <- p_int_only / p_int / p_aw
+#p_int_all <- p_int_only / p_int / p_aw
 
-ggsave(filename = "plot_intervals_all.pdf", plot = p_int_all, width = 7, height = 10)
+p_int_all <- p_int_only / (p_int | p_aw)
+
+ggsave(filename = "plot_intervals_all.pdf", plot = p_int_all, width = 9, height = 9)
